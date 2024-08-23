@@ -7,8 +7,7 @@ cv::Mat parabolic_RANSAC(const std::vector<cv::Point2f>& points, int iteration, 
     int bestInliers = 0;
 
     // generating random seed
-    std::random_device random_seed;
-    std::mt19937 rng(random_seed);
+    std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<int> dist(0, points.size() - 1);
 
     // parabolic RANSAC fitting
@@ -22,7 +21,7 @@ cv::Mat parabolic_RANSAC(const std::vector<cv::Point2f>& points, int iteration, 
             samplePoints.push_back(points[sample_index]);
         }
 
-        // calculate parabolic function y = a * ( x ^ 2 ) + b * x + c
+        // calculate parabolic function : y = a * ( x ^ 2 ) + b * x + c
         cv::Mat A(sample_num, 3, CV_32F), B(sample_num, 1, CV_32F);
         for (int idx = 0; idx < sample_num; idx++) 
         {
@@ -41,16 +40,16 @@ cv::Mat parabolic_RANSAC(const std::vector<cv::Point2f>& points, int iteration, 
         cv::solve(A, B, model, cv::DECOMP_SVD);
 
         // evaluation inliers and model
-        int inliers = 0;
+        int inlier_count = 0;
         float* coefficient = model.ptr<float>(0);
         for (const auto& point : points)
         {
             float y_pred = coefficient[0] * point.x * point.x + coefficient[1] * point.x + coefficient[2];
-            if (std::abs(point.y - y_pred) < inlier_distance) inliers++;
+            if (std::abs(point.y - y_pred) < inlier_distance) inlier_count++;
         }
 
         // judge the best parabolic function
-        if (inliers > bestInliers) 
+        if ( bestInliers < inlier_count ) 
         {
             bestInliers = inliers;
             bestModel   = model;
